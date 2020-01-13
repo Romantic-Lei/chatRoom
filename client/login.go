@@ -60,6 +60,17 @@ func login(userId int, userPwd string) (err error) {
 		return 
 	}
 
-	fmt.Printf("客服端发送消息长度 =%d, 内容 =%s", len(data), string(data))
+	// fmt.Printf("客服端发送消息长度 =%d, 内容 =%s", len(data), string(data))
+
+	// 发送消息本身
+	_, err = conn.Write(data)
+	if err != nil {
+		fmt.Println("conn.Write(data) fail", err)
+		return 
+	}
+
+	// 这里还需要处理服务器端返回的消息
+
+
 	return 
 }
