@@ -39,6 +39,59 @@ func readPkg(conn net.Conn) (mes message.Message, err error) {
 	return 
 }
 
+// 函数serverProcessLogin函数，专门处理登录请求
+func ServerProcessLogin(conn net.Conn, mes *message.Message) (err error) {
+	// 核心代码
+	// 1.先从mes 中取出 mes.Data, 并直接反序列化成LoginMes
+	var loginMes message.LoginMes
+	err = json.Unmarshal([]byte(mes.Data), &loginMes)
+	if err != nil {
+		fmt.Println("json.Unmarshal fail err", err)
+		return 
+	}
+
+	// 1. 先声明一个 resMes
+	var resMes message.Message
+	resMes.Type = message.LoginResType
+
+	// 2. 在声明一个LoginResMes
+	var loginResMes message.LoginResMesType
+
+	// 假定用户id = 100， 密码 = 123456， 则我们认为合法
+	if loginMes.UserId == 100 && loginMes.UserPwd == "123456" {
+		// 合法
+		loginResMes.Code = 200
+	} else {
+		// 不合法
+		loginResMes.Code = 500 // 500我们自定为用户不存在
+		loginResMes.Error = "该用户不存在，请确认用户名是否思路正确"
+	}
+
+	// 3. 将 loginResMes 序列化
+	data, err := json.Marshal(loginResMes)
+	if err != nil {
+		fmt.Println("json.Marshal fail", err)
+		return 
+	}
+
+	// 4. 将 data 赋值给 resMes
+	resMes.Data = string(data)
+}
+
+//  编写一个ServerProcessMes 函数
+// 根据客户端发送消息种类的不同，确定调用哪个函数来处理
+func ServerProcessMes(conn net.Conn, mes *message.Message) (err error) {
+	switch mes.Type {
+		case message.LoginMesType : 
+			// 处理登录逻辑
+			err = ServerProcessLogin(conn, mes)
+		case message.RegisterMesType :
+			// 处理注册逻辑
+		default :
+			fmt.Println("消息类型不存在，处理失败")
+	}
+}
+
 // 处理和客户端的通信
 func process(conn net.Conn) {
 	// 这里需要延时关闭conn
