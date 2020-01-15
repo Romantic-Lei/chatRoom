@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"net"
 	"go_code/chatRoom/common/message"
+	"errors"
 )
 
 // 写一个函数，完成登陆
@@ -70,7 +71,19 @@ func login(userId int, userPwd string) (err error) {
 	}
 
 	// 这里还需要处理服务器端返回的消息
-
-
+	mes, err = readPkg(conn) // mes 就是
+	if err != nil {
+		fmt.Println("readPkg fail", err)
+		return
+	}
+	// 将 mes 的data部分反序列化成LoginResMes
+	var loginResMes message.LoginResMes
+	err = json.Unmarshal([]byte(mes.Data), &loginResMes)
+	if loginResMes.Code == 200 {
+		fmt.Println("登录成功!")
+	} else if loginResMes.Code == 500 {
+		fmt.Println(loginResMes.Error)
+		return errors.New("read pkg body error")
+	}
 	return 
 }

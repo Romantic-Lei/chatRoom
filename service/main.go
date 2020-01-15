@@ -2,7 +2,7 @@ package main
 import (
 	"fmt"
 	"net"
-	"go_code/chatroom/common/message"
+	"go_code/chatRoom/common/message"
 	"encoding/binary"
 	"encoding/json"
 	_"errors"
@@ -39,6 +39,28 @@ func readPkg(conn net.Conn) (mes message.Message, err error) {
 	return 
 }
 
+func writePkg(conn net.Conn, data []byte) (err error) {
+	// 先发送一个长度给对方
+	var pkgLen uint32
+	pkgLen = uint32(len(data))
+	var buf [4]byte
+	binary.BigEndian.PutUint32(buf[0:4], pkgLen)
+	// 发送长度
+	n, err := conn.Write(buf[:4])
+	if n != 4 || err != nil {
+		fmt.Println("conn.Write(buf) fail", err)
+		return 
+	}
+
+	// 发送data 本身
+	n, err = conn.Write(data)
+	if n != int(pkgLen) || err != nil {
+		fmt.Println("conn.Write(buf) fail", err)
+		return 
+	}
+	return 
+}
+
 // 函数serverProcessLogin函数，专门处理登录请求
 func ServerProcessLogin(conn net.Conn, mes *message.Message) (err error) {
 	// 核心代码
@@ -52,10 +74,10 @@ func ServerProcessLogin(conn net.Conn, mes *message.Message) (err error) {
 
 	// 1. 先声明一个 resMes
 	var resMes message.Message
-	resMes.Type = message.LoginResType
+	resMes.Type = message.LoginResMesType
 
 	// 2. 在声明一个LoginResMes
-	var loginResMes message.LoginResMesType
+	var loginResMes message.LoginResMes
 
 	// 假定用户id = 100， 密码 = 123456， 则我们认为合法
 	if loginMes.UserId == 100 && loginMes.UserPwd == "123456" {
@@ -64,7 +86,7 @@ func ServerProcessLogin(conn net.Conn, mes *message.Message) (err error) {
 	} else {
 		// 不合法
 		loginResMes.Code = 500 // 500我们自定为用户不存在
-		loginResMes.Error = "该用户不存在，请确认用户名是否思路正确"
+		loginResMes.Error = "该用户不存在，请确认用户名是否输入正确"
 	}
 
 	// 3. 将 loginResMes 序列化
@@ -76,11 +98,22 @@ func ServerProcessLogin(conn net.Conn, mes *message.Message) (err error) {
 
 	// 4. 将 data 赋值给 resMes
 	resMes.Data = string(data)
+
+	// 5. 对 resMes 进行序列化， 准备发送
+	data, err = json.Marshal(resMes)
+	if err != nil {
+		fmt.Println("json.Marshal fail", err)
+		return 
+	}
+
+	// 6. 发送 data， 将其封装到 writePkg 函数中
+	err = writePkg(conn, data)
+	return 
 }
 
-//  编写一个ServerProcessMes 函数
+//  编写一个serverProcessMes 函数
 // 根据客户端发送消息种类的不同，确定调用哪个函数来处理
-func ServerProcessMes(conn net.Conn, mes *message.Message) (err error) {
+func serverProcessMes(conn net.Conn, mes *message.Message) (err error) {
 	switch mes.Type {
 		case message.LoginMesType : 
 			// 处理登录逻辑
@@ -90,6 +123,7 @@ func ServerProcessMes(conn net.Conn, mes *message.Message) (err error) {
 		default :
 			fmt.Println("消息类型不存在，处理失败")
 	}
+	return 
 }
 
 // 处理和客户端的通信
@@ -110,8 +144,10 @@ func process(conn net.Conn) {
 			}
 		}
 
-		fmt.Println("mes =", mes)
-		
+		err = serverProcessMes(conn, &mes)
+		if err != nil {
+			return 
+		}
 	}
 }
 

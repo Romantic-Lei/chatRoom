@@ -49,7 +49,7 @@ func main() {
 		if err != nil {
 			fmt.Println("登陆失败")
 		} else {
-			fmt.Println("登陆成功")
+			fmt.Println("登陆成功~~~")
 		}
 	}else if key == 2 {
 		fmt.Println("用户注册")
