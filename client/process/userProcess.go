@@ -6,7 +6,7 @@ import (
 	"go_code/chatRoom/client/utils"
 	"encoding/json"
 	"encoding/binary"
-	"errors"
+	_"errors"
 )
 
 type UserProcess struct {
@@ -68,7 +68,7 @@ func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 		return 
 	}
 
-	// fmt.Printf("客服端发送消息长度 =%d, 内容 =%s", len(data), string(data))
+	fmt.Printf("客服端发送消息长度 =%d, 内容 =%s", len(data), string(data))
 
 	// 发送消息本身
 	_, err = conn.Write(data)
@@ -102,9 +102,8 @@ func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 			ShowMenu()
 		}
 
-	} else if loginResMes.Code == 500 {
+	} else {
 		fmt.Println(loginResMes.Error)
-		return errors.New("read pkg body error")
 	}
 	return 
 }

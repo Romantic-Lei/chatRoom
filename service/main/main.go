@@ -2,6 +2,8 @@ package main
 import (
 	"fmt"
 	"net"
+	"time"
+	"go_code/chatRoom/service/model"
 )
 
 // func readPkg(conn net.Conn) (mes message.Message, err error) {
@@ -138,7 +140,18 @@ func process(conn net.Conn) {
 	}
 }
 
+// 这里我们编写一个函数， 完成对 UserDao的初始化任务
+func initUserDao() {
+	// 这里的pool 本身就是一个全局变量，存放在本包下面的redis.go里面
+	// 注意这里我们必须要先初始化initpool，不然我们的pool就是一个空的
+	model.MyUserDao = model.NewUserDao(pool)
+}
+
 func main() {
+	// 当服务器启动时，我们就去初始化我们的redis 的连接池
+	// 不同的机器需要改成不同的ip
+	initPool("192.168.0.110:6379", 16, 0, time.Second)
+	initUserDao()
 	// 提示信息
 	fmt.Println("服务器[新的结构]在8889 端口监听...")
 	listen, err := net.Listen("tcp", "127.0.0.1:8889")
