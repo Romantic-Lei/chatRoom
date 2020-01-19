@@ -12,6 +12,63 @@ type UserProcess struct {
 	Conn net.Conn
 }
 
+func (this *UserProcess) ServerProcessRegister(mes *message.Message) (err error) {
+	// 1.先从mes 中取出 mes.Data, 并直接反序列化成registerMes
+	var registerMes message.RegisterMes
+	err = json.Unmarshal([]byte(mes.Data), &registerMes)
+	if err != nil {
+		fmt.Println("json.Unmarshal fail err", err)
+		return 
+	}
+
+	// 1. 先声明一个 resMes
+	var resMes message.Message
+	resMes.Type = message.RegisterMesType
+
+	// 2. 在声明一个RegisterResMes
+	var registerResMes message.RegisterResMes
+
+	// 我们需要到 redis数据库去完成注册
+	// 1.使用 model.MyUserDao 到redis验证
+	err = model.MyUserDao.Register(&registerMes.User)
+
+	if err != nil {
+		if err == model.ERROR_USER_EXISTS {
+			registerResMes.Code = 505
+			registerResMes.Error = model.ERROR_USER_EXISTS.Error()
+		} else {
+			registerResMes.Code = 506
+			registerResMes.Error = "注册发生未知错误..."
+		}
+	} else {
+		registerResMes.Code = 200
+	}
+	// 3. 将 registerResMes 序列化
+	data, err := json.Marshal(registerResMes)
+	if err != nil {
+		fmt.Println("json.Marshal fail", err)
+		return 
+	}
+	// 4. 将 data 赋值给 resMes
+	resMes.Data = string(data)
+
+	// 5. 对 resMes 进行序列化， 准备发送
+	data, err = json.Marshal(resMes)
+	if err != nil {
+		fmt.Println("json.Marshal fail", err)
+		return 
+	}
+
+	// 6. 发送 data， 将其封装到 writePkg 函数中
+	// 因为使用了分层模式（mvc），我们先创建一个 Transfer 实例，然后读取
+	tf := &utils.Transfer{
+		Conn: this.Conn,
+
+	}
+	err = tf.WritePkg(data)
+	return 
+}
+
 // 函数serverProcessLogin函数，专门处理登录请求
 func (this *UserProcess) ServerProcessLogin(mes *message.Message) (err error) {
 	// 核心代码

@@ -2,6 +2,7 @@ package model
 import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"go_code/chatRoom/common/message"
 	"encoding/json"
 )
 
@@ -63,10 +64,36 @@ func (this *UserDao) Login(userId int, userPwd string) (user *User, err error) {
 		return 
 	}
 
-	// 这是可以证明用户是可以获取到的。我们接下来需要校验密码是正确的
+	// 这时可以证明用户是可以获取到的。我们接下来需要校验密码是正确的
 	fmt.Println("user.UserPwd = ", user.UserPwd, "userPwd = ", userPwd)
 	if user.UserPwd != userPwd {
 		err = ERROR_USER_PWD
+		return 
+	}
+	return 
+}
+
+func (this *UserDao) Register(user *message.User) (err error) {
+	// 先从UserDao的连接池中取出一个连接
+	conn := this.pool.Get()
+	defer conn.Close()
+	_, err = this.getUserById(conn, user.UserId)
+	// 如果没有错误，则说明用户已存在
+	if err == nil {
+		err = ERROR_USER_EXISTS
+		return 
+	}
+
+	// 这时说明 id 在redis中还没有，则可以完成注册
+	data, err := json.Marshal(user) // 序列化
+	if err != nil {
+		fmt.Println("json.Marshal err = ", err)
+		return
+	}
+	// 入库
+	_, err = conn.Do("HSet", "users", user.UserId, string(data))
+	if err != nil {
+		fmt.Println("保存注册用户信息错误 err = ", err)
 		return 
 	}
 	return 

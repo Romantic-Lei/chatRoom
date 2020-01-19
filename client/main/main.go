@@ -8,6 +8,7 @@ import (
 // 定义两个变量，一个表示用户id，一个表示用户密码
 var userId int
 var	userPwd string
+var userName string
 
 func main() {
 	// 接收用户的选择
@@ -33,10 +34,17 @@ func main() {
 				// 1.创建一个USerProcess的实例
 				up := &process.UserProcess{}
 				up.Login(userId, userPwd)
-				// loop = false
 			case 2 : 
 				fmt.Println("用户注册")
-				// loop = false
+				fmt.Println("请设置您的id:")
+				fmt.Scanf("%d\n", &userId)
+				fmt.Println("请设置您的密码")
+				fmt.Scanf("%s\n", &userPwd)
+				fmt.Println("请设置您的昵称(nickname)")
+				fmt.Scanf("%s\n", &userName)
+				// 2. 调用UserProcess， 完成注册的请求
+				up := &process.UserProcess{}
+				up.Register(userId, userPwd, userName)
 			case 3 : 
 				fmt.Println("退出系统")
 				os.Exit(0)
