@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"net"
+	"encoding/json"
 	"go_code/chatRoom/client/utils"
+	"go_code/chatRoom/common/message"
 )
 
 // 先试试登录成功之后的界面
@@ -19,7 +21,8 @@ func ShowMenu() {
 	fmt.Scanf("%d\n", &key)
 	switch key {
 		case 1:
-			fmt.Println("显示在线用户列表")
+			// fmt.Println("显示在线用户列表")
+			outputOnlineUser()
 		case 2:
 			fmt.Println("发送消息")
 		case 3:
@@ -46,6 +49,17 @@ func serverProcessMes(conn net.Conn) {
 			return 
 		}
 		// 如果读到消息，则到下一步处理逻辑
-		fmt.Printf("mes = %v\n", mes)
+		switch mes.Type {
+			case message.NotifyUserStatusMesType : // 有用户上线
+				// 处理逻辑
+				// 1. 取出 NotifyUserStatusMesType 
+				var notifyUserStatusMes message.NotifyUserStatusMes
+				json.Unmarshal([]byte(mes.Data), &notifyUserStatusMes)
+				// 2. 把用户的信息，状态保存到客户 map 中
+				updateUserStatus(&notifyUserStatusMes)
+			default :
+				fmt.Println("服务器端返回了一个未知的消息类型")
+		}
+		// fmt.Printf("mes = %v\n", mes)
 	}
 }
